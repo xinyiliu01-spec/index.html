@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>圣诞快乐 张协杰</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #000; }
+  #tip {
+    position: fixed;
+    bottom: 20px;
+    width: 100%;
+    text-align: center;
+    color: #fff;
+    font-size: 14px;
+    opacity: .8;
+    font-family: "PingFang SC", "Microsoft YaHei";
+  }
+</style>
+</head>
+<body>
+<div id="tip">🎵 轻点屏幕，开启圣诞音乐</div>
+
+<audio id="music" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/12/06/audio_1bfb4a4c75.mp3">
+</audio>
+
+<script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
+
+<script>
+const music = document.getElementById("music");
+document.body.addEventListener("click", () => {
+  music.play();
+  document.getElementById("tip").style.display = "none";
+});
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 2000);
+camera.position.z = 500;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const starGeo = new THREE.BufferGeometry();
+const starCount = 2000;
+const positions = [];
+const colors = [];
+
+for (let i = 0; i < starCount; i++) {
+  const y = Math.random() * 400 - 200;
+  const r = (1 - y / 200) * 200 * Math.random();
+  const angle = Math.random() * Math.PI * 2;
+
+  positions.push(
+    Math.cos(angle) * r,
+    y,
+    Math.sin(angle) * r
+  );
+
+  const c = Math.random() < 0.85
+    ? new THREE.Color(1, 0.85, 0.4)
+    : new THREE.Color(1, 0.3, 0.3);
+
+  colors.push(c.r, c.g, c.b);
+}
+
+starGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+starGeo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
+const starMat = new THREE.PointsMaterial({
+  size: 4,
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.9
+});
+
+const points = new THREE.Points(starGeo, starMat);
+scene.add(points);
+
+let phase = 0;
+let t = 0;
+const original = positions.slice();
+
+function animate() {
+  requestAnimationFrame(animate);
+  t++;
+
+  if (phase === 0 && t > 180) phase = 1;
+  if (phase === 1 && t > 260) phase = 2;
+
+  const pos = starGeo.attributes.position.array;
+
+  for (let i = 0; i < pos.length; i += 3) {
+    if (phase === 1) {
+      pos[i] += (Math.random() - 0.5) * 10;
+      pos[i+1] += (Math.random() - 0.5) * 10;
+      pos[i+2] += (Math.random() - 0.5) * 10;
+    }
+    if (phase === 2) {
+      const idx = i / 3;
+      const a = idx / (pos.length / 3) * Math.PI * 2;
+      const x = 16 * Math.pow(Math.sin(a), 3);
+      const y = -(13 * Math.cos(a) - 5*Math.cos(2*a));
+      pos[i] += (x*18 - pos[i]) * 0.05;
+      pos[i+1] += (y*18 - pos[i+1]) * 0.05;
+      pos[i+2] += (0 - pos[i+2]) * 0.05;
+    }
+  }
+
+  starGeo.attributes.position.needsUpdate = true;
+  points.rotation.y += 0.002;
+
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
